@@ -39,6 +39,8 @@ namespace TK.RaidBot.Services
                 var role = emojiService.GetRoleByEmoji(emoji);
                 if (role.HasValue)
                     return new SetParticipantRole(raid, role.Value, dataService, messageBuilder);
+
+                return new UnknownAction(emoji);
             }
             return null;
         }

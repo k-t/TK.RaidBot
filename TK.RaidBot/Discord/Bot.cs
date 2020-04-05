@@ -81,19 +81,12 @@ namespace TK.RaidBot.Discord
             await HandleWithErrorLogging(async () =>
             {
                 var actionContext = new BotActionContext(e.Client, e.Channel, e.Message, e.User);
-
                 var action = actionService.GetBotActionByEmoji(e.Emoji, actionContext);
                 if (action != null)
                 {
                     await action.Execute(actionContext);
+                    await e.Message.DeleteReactionAsync(e.Emoji, e.User);
                 }
-                else
-                {
-                    Log.Debug("Unknown reaction used: user={0} emoji={1} messageId={2}",
-                        e.User.Username, e.Emoji.GetDiscordName(), e.Message.Id);
-                }
-
-                await e.Message.DeleteReactionAsync(e.Emoji, e.User);
             });
         }
 
