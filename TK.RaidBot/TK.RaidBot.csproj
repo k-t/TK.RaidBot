@@ -6,16 +6,23 @@
     <RootNamespace>TK.RaidBot</RootNamespace>
     <ApplicationIcon />
     <StartupObject>TK.RaidBot.Program</StartupObject>
-    <AssemblyName>tk-raidbot</AssemblyName>
+    <AssemblyName>TK.RaidBot</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="DSharpPlus" Version="4.0.0-nightly-00679" />
     <PackageReference Include="DSharpPlus.CommandsNext" Version="4.0.0-nightly-00679" />
     <PackageReference Include="DSharpPlus.Interactivity" Version="4.0.0-nightly-00679" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Ini" Version="3.1.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.1" />
     <PackageReference Include="MongoDB.Driver" Version="2.10.2" />
     <PackageReference Include="NLog" Version="4.7.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="config.ini">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

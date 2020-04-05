@@ -8,6 +8,7 @@ using DSharpPlus.Interactivity;
 using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using TK.RaidBot.Actions;
+using TK.RaidBot.Config;
 using TK.RaidBot.Services;
 
 namespace TK.RaidBot.Discord
@@ -24,7 +25,7 @@ namespace TK.RaidBot.Discord
         private readonly DataService dataService;
         private readonly ActionService actionService;
 
-        public Bot(BotConfig config)
+        public Bot(BotConfig config, IServiceProvider serviceProvider)
         {
             if (config == null)
                 throw new ArgumentNullException(nameof(config));
@@ -37,8 +38,8 @@ namespace TK.RaidBot.Discord
                 LogLevel = DSharpPlus.LogLevel.Debug
             };
 
-            dataService = config.Services.GetService<DataService>();
-            actionService = config.Services.GetService<ActionService>();
+            dataService = serviceProvider.GetService<DataService>();
+            actionService = serviceProvider.GetService<ActionService>();
 
             client = new DiscordClient(clientConfig);
             client.DebugLogger.LogMessageReceived += HandleLogMessage;
@@ -48,7 +49,7 @@ namespace TK.RaidBot.Discord
             var commandsConfig = new CommandsNextConfiguration
             {
                 StringPrefixes = new[] { CommandPrefix },
-                Services = config.Services
+                Services = serviceProvider
             };
 
             commands = client.UseCommandsNext(commandsConfig);

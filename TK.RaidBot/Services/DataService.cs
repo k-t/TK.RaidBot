@@ -2,31 +2,30 @@
 using System.Linq;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using TK.RaidBot.Config;
 using TK.RaidBot.Model.Data;
 
 namespace TK.RaidBot.Services
 {
     public class DataService
     {
-        private const string DatabaseUrlVariableName = "DATABASE_URL";
-
-        private const string DatabaseName = "raidBotDB";
         private const string RaidCollectionName = "raids";
 
         private readonly MongoClient dbClient;
+        private readonly string dbName;
         private readonly object messageUpdateLock = new object();
 
-        public DataService()
+        public DataService(DatabaseConfig config)
         {
-            var databaseUrl = Environment.GetEnvironmentVariable(DatabaseUrlVariableName);
-            dbClient = new MongoClient(databaseUrl);
+            dbClient = new MongoClient(config.DatabaseUrl);
+            dbName = config.DatabaseName;
         }
 
         public Raid AddRaid(Raid raid)
         {
             raid.Timestamp = DateTime.Now;
 
-            var raids = dbClient.GetDatabase(DatabaseName).GetCollection<Raid>(RaidCollectionName);
+            var raids = dbClient.GetDatabase(dbName).GetCollection<Raid>(RaidCollectionName);
             raids.InsertOne(raid);
 
             return raid;
@@ -36,7 +35,7 @@ namespace TK.RaidBot.Services
         {
             var filter = CreateByMessageFilter(channelId, messageId);
 
-            var raids = dbClient.GetDatabase(DatabaseName).GetCollection<Raid>(RaidCollectionName);
+            var raids = dbClient.GetDatabase(dbName).GetCollection<Raid>(RaidCollectionName);
             var result = raids.DeleteOne(filter);
 
             return result.DeletedCount > 0;
@@ -45,14 +44,14 @@ namespace TK.RaidBot.Services
         public Raid GetRaidById(ObjectId id)
         {
             var filter = CreateByIdFilter(id);
-            var raids = dbClient.GetDatabase(DatabaseName).GetCollection<Raid>(RaidCollectionName);
+            var raids = dbClient.GetDatabase(dbName).GetCollection<Raid>(RaidCollectionName);
             return raids.Find(filter).FirstOrDefault();
         }
 
         public Raid GetRaidByMessage(ulong channelId, ulong messageId)
         {
             var filter = CreateByMessageFilter(channelId, messageId);
-            var raids = dbClient.GetDatabase(DatabaseName).GetCollection<Raid>(RaidCollectionName);
+            var raids = dbClient.GetDatabase(dbName).GetCollection<Raid>(RaidCollectionName);
             return raids.Find(filter).FirstOrDefault();
         }
 
@@ -110,7 +109,7 @@ namespace TK.RaidBot.Services
             {
                 using (var session = dbClient.StartSession())
                 {
-                    var raids = dbClient.GetDatabase(DatabaseName).GetCollection<Raid>(RaidCollectionName);
+                    var raids = dbClient.GetDatabase(dbName).GetCollection<Raid>(RaidCollectionName);
 
                     session.StartTransaction();
                     try
