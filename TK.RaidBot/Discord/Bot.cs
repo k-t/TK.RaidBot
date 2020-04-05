@@ -97,7 +97,7 @@ namespace TK.RaidBot.Discord
             });
         }
 
-        private async Task HandleMessageDeletion(MessageDeleteEventArgs e)
+        private Task HandleMessageDeletion(MessageDeleteEventArgs e)
         {
             HandleWithErrorLogging(() =>
             {
@@ -105,6 +105,7 @@ namespace TK.RaidBot.Discord
                 if (deleted)
                     Log.Debug("Raid was deleted: channelId={0} messageId={0}", e.Channel.Id, e.Message.Id);
             });
+            return Task.CompletedTask;
         }
 
         public async Task HandleWithErrorLogging(Func<Task> action)

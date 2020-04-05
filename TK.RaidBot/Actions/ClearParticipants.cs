@@ -4,8 +4,9 @@ namespace TK.RaidBot.Actions
 {
     public class ClearParticipants : IBotAction
     {
-        public async Task Execute(BotActionContext ctx)
+        public Task Execute(BotActionContext ctx)
         {
+            return Task.CompletedTask;
         }
     }
 }
