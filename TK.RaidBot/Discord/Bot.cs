@@ -101,15 +101,16 @@ namespace TK.RaidBot.Discord
             return Task.CompletedTask;
         }
 
-        public async Task HandleWithErrorLogging(Func<Task> action)
+        public Task HandleWithErrorLogging(Func<Task> action)
         {
             try
             {
-                await action();
+                return action();
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "Unhandled exception");
+                return Task.CompletedTask;
             }
         }
 
