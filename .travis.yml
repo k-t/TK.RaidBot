@@ -2,7 +2,14 @@ language: csharp
 mono: none
 dist: xenial
 dotnet: 3.1
+env:
+  global:
+    - CONFIGURATION: Release
+    - RUNTIME: win-x64
 install:
   - dotnet restore --source https://nuget.emzi0767.com/api/v3/index.json --source https://api.nuget.org/v3/index.json
 script:
-  - dotnet build
+  - dotnet publish -c "$CONFIGURATION" -r "$RUNTIME" -o "./publish/$CONFIGURATION/$RUNTIME" --no-self-contained
+  - cd "./publish/$CONFIGURATION/$RUNTIME"
+  - TIMESTAMP=$(date '+%Y%m%d%H%M%S')
+  - zip -r "TK.RaidBot-$RUNTIME-$TIMESTAMP.zip" .
