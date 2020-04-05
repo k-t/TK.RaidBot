@@ -6,6 +6,7 @@ env:
   global:
     - CONFIGURATION: Release
     - RUNTIME: win-x64
+    - RUNTIME: linux-x64
 install:
   - dotnet restore --source https://nuget.emzi0767.com/api/v3/index.json --source https://api.nuget.org/v3/index.json
 script:
