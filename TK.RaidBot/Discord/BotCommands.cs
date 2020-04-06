@@ -83,7 +83,9 @@ namespace TK.RaidBot.Discord
                     Title = title,
                     Date = raidDate,
                     Status = RaidStatus.Scheduled,
-                    Participants = new List<RaidParticipant>()
+                    Participants = new List<RaidParticipant>(),
+                    OwnerId = ctx.User.Id,
+                    OwnerDisplayName = ctx.Member.DisplayName
                 };
 
                 var messageEmbed = messageBuilder.BuildEmbed(ctx.Client, raid);

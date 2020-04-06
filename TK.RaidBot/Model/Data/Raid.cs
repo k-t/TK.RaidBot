@@ -16,6 +16,10 @@ namespace TK.RaidBot.Model.Data
 
         public ulong ChannelId { get; set; }
 
+        public ulong OwnerId { get; set; }
+
+        public string OwnerDisplayName { get; set; }
+
         public DateTime CreationDate { get; set; }
 
         public DateTime Timestamp { get; set; }

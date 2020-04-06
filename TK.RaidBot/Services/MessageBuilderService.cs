@@ -87,12 +87,20 @@ namespace TK.RaidBot.Services
 
             // create embed
 
+            var description = new StringBuilder();
             var date = raid.Date.AddHours(3); // MSK time
+            description.Append($"**{date.ToString("f", cultureInfo)} MSK**");
+
+            if (!string.IsNullOrEmpty(raid.OwnerDisplayName))
+            {
+                description.Append('\n');
+                description.Append($"\u00a9 {raid.OwnerDisplayName}");
+            }
 
             var embed = new DiscordEmbedBuilder
             {
                 Title = raid.Title,
-                Description = $"{date.ToString("f", cultureInfo)} MSK",
+                Description = description.ToString(),
                 Color = GetEmbedColor(raid.Status)
             };
 
