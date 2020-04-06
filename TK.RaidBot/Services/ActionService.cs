@@ -26,21 +26,36 @@ namespace TK.RaidBot.Services
             var raid = dataService.GetRaidByMessage(ctx.Channel.Id, ctx.Message.Id);
             if (raid != null)
             {
+                var emojiName = emoji.GetDiscordName();
+
                 //if (emoji.GetDiscordName().Contains("🗑️"))
                 //    return new ClearParticipantsAction();
 
-                if (emoji.GetDiscordName() == ":question:")
-                    return new SetParticipantRole(raid, RaidRole.Unknown, dataService, messageBuilder);
+                switch (emojiName)
+                {
+                    case ":question:":
+                        return new SetParticipantRole(raid, RaidRole.Unknown, dataService, messageBuilder);
+                    case ":stop_button:":
+                        return new SetRaidStatus(raid, RaidStatus.Expired, dataService, emojiService, messageBuilder);
+                    case ":arrow_forward:":
+                        return new SetRaidStatus(raid, RaidStatus.Scheduled, dataService, emojiService, messageBuilder);
+                    default:
+                    {
+                        // allow to change participation state only for scheduled raids
+                        if (raid.Status == RaidStatus.Scheduled)
+                        {
+                            var status = emojiService.GetStatusByEmoji(emoji);
+                            if (status.HasValue)
+                                return new SetParticipantStatus(raid, status.Value, dataService, messageBuilder);
 
-                var status = emojiService.GetStatusByEmoji(emoji);
-                if (status.HasValue)
-                    return new SetParticipantStatus(raid, status.Value, dataService, messageBuilder);
+                            var role = emojiService.GetRoleByEmoji(emoji);
+                            if (role.HasValue)
+                                return new SetParticipantRole(raid, role.Value, dataService, messageBuilder);
+                        }
+                        return new UnknownAction(emoji);
+                    }
+                }
 
-                var role = emojiService.GetRoleByEmoji(emoji);
-                if (role.HasValue)
-                    return new SetParticipantRole(raid, role.Value, dataService, messageBuilder);
-
-                return new UnknownAction(emoji);
             }
             return null;
         }
