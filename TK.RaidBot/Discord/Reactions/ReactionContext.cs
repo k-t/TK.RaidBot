@@ -1,18 +1,20 @@
 ﻿using DSharpPlus;
 using DSharpPlus.Entities;
 
-namespace TK.RaidBot.Actions
+namespace TK.RaidBot.Discord.Reactions
 {
-    public class BotActionContext
+    public class ReactionContext
     {
-        public BotActionContext(
+        internal ReactionContext(
             DiscordClient client,
             DiscordChannel channel,
+            DiscordEmoji emoji,
             DiscordMessage message,
             DiscordUser user)
         {
             Client = client;
             Channel = channel;
+            Emoji = emoji;
             Message = message;
             User = user;
         }
@@ -20,6 +22,8 @@ namespace TK.RaidBot.Actions
         public DiscordClient Client { get; }
 
         public DiscordChannel Channel { get; }
+
+        public DiscordEmoji Emoji { get; }
 
         public DiscordMessage Message { get; }
 

@@ -37,9 +37,9 @@ namespace TK.RaidBot.Services
             return result;
         }
 
-        public ParticipationStatus? GetStatusByEmoji(DiscordEmoji emoji)
+        public ParticipationStatus? GetStatusByEmoji(string emojiName)
         {
-            switch (emoji.GetDiscordName())
+            switch (emojiName)
             {
                 case ":white_check_mark:":
                     return ParticipationStatus.Available;
@@ -52,9 +52,9 @@ namespace TK.RaidBot.Services
             }
         }
 
-        public RaidRole? GetRoleByEmoji(DiscordEmoji emoji)
+        public RaidRole? GetRoleByEmoji(string emojiName)
         {
-            var roleName = emoji.GetDiscordName().Trim(':');
+            var roleName = emojiName.Trim(':');
 
             if (Enum.TryParse(roleName, out RaidRole role))
                 return role;
