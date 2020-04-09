@@ -35,7 +35,7 @@ namespace TK.RaidBot.Discord.Reactions
             client.MessageReactionAdded += HandleMessageReaction;
         }
 
-        private Task HandleMessageReaction(MessageReactionAddEventArgs e)
+        private async Task HandleMessageReaction(MessageReactionAddEventArgs e)
         {
             var ctx = new ReactionContext(e.Client, e.Channel, e.Emoji, e.Message, e.User);
 
@@ -44,28 +44,17 @@ namespace TK.RaidBot.Discord.Reactions
                 var reactionHandler = module.GetReactionHandler(e.Emoji.GetDiscordName(), ctx);
                 if (reactionHandler != null)
                 {
-                    return HandleWithErrorLogging(async () =>
+                    try
                     {
                         await reactionHandler(ctx);
                         if (config.DeleteReactions)
                             await e.Message.DeleteReactionAsync(e.Emoji, e.User);
-                    });
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex, "Unhandled exception");
+                    }
                 }
-            }
-
-            return Task.CompletedTask;
-        }
-
-        private Task HandleWithErrorLogging(Func<Task> action)
-        {
-            try
-            {
-                return action();
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Unhandled exception");
-                return Task.CompletedTask;
             }
         }
     }
