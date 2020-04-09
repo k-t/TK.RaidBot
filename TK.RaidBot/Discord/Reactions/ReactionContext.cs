@@ -7,12 +7,14 @@ namespace TK.RaidBot.Discord.Reactions
     {
         internal ReactionContext(
             DiscordClient client,
+            DiscordGuild guild,
             DiscordChannel channel,
-            DiscordEmoji emoji,
             DiscordMessage message,
+            DiscordEmoji emoji,
             DiscordUser user)
         {
             Client = client;
+            Guild = guild;
             Channel = channel;
             Emoji = emoji;
             Message = message;
@@ -22,6 +24,8 @@ namespace TK.RaidBot.Discord.Reactions
         public DiscordClient Client { get; }
 
         public DiscordChannel Channel { get; }
+
+        public DiscordGuild Guild { get; }
 
         public DiscordEmoji Emoji { get; }
 

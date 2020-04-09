@@ -37,7 +37,7 @@ namespace TK.RaidBot.Discord.Reactions
 
         private async Task HandleMessageReaction(MessageReactionAddEventArgs e)
         {
-            var ctx = new ReactionContext(e.Client, e.Channel, e.Emoji, e.Message, e.User);
+            var ctx = new ReactionContext(e.Client, e.Guild, e.Channel, e.Message, e.Emoji, e.User);
 
             foreach (var module in modules)
             {

@@ -33,16 +33,30 @@ namespace TK.RaidBot.Discord
             var raid = raidService.GetRaid(ctx.Channel.Id, ctx.Message.Id);
             if (raid != null)
             {
+                bool isAdmin =
+                    ctx.User.Id == raid.OwnerId ||
+                    ctx.User.Id == ctx.Guild.Owner.Id ||
+                    ctx.Client.CurrentApplication.Owners.Any(x => x.Id == ctx.User.Id);
+
+                Log.Debug("Got reaction '{0}' from '{1}', isAdmin={2}",
+                    emojiName, ctx.User.Username, isAdmin);
+
                 switch (emojiName)
                 {
+                    case ":stop_button:":
+                        return isAdmin
+                            ? ctx => SetRaidStatus(RaidStatus.Expired, ctx)
+                            : (AsyncReactionHandler)null;
+                    case ":arrow_forward:":
+                        return isAdmin
+                            ? ctx => SetRaidStatus(RaidStatus.Scheduled, ctx)
+                            : (AsyncReactionHandler)null;
+                    case ":hammer:":
+                        return isAdmin
+                            ? FixReactions
+                            : (AsyncReactionHandler)null;
                     case ":question:":
                         return ctx => SetParticipantRole(RaidRole.Unknown, ctx);
-                    case ":stop_button:":
-                        return ctx => SetRaidStatus(RaidStatus.Expired, ctx);
-                    case ":arrow_forward:":
-                        return ctx => SetRaidStatus(RaidStatus.Scheduled, ctx);
-                    case ":hammer:":
-                        return FixReactions;
                     default:
                         {
                             // allow to change participation state only for scheduled raids
@@ -80,8 +94,7 @@ namespace TK.RaidBot.Discord
                 raidService.UpdateRaid(raid);
             }
 
-            Log.Debug("Updating message: user={0}, messageId={1} action={2}",
-                ctx.User.Username, ctx.Message.Id, this);
+            Log.Debug("Updating message {0}", ctx.Message.Id);
 
             switch (status)
             {
@@ -125,8 +138,7 @@ namespace TK.RaidBot.Discord
                 }
             }
 
-            Log.Debug("Updating message: user={0}, messageId={1} action={2}",
-                ctx.User.Username, ctx.Message.Id, this);
+            Log.Debug("Updating message {0}", ctx.Message.Id);
 
             await ctx.Message.ModifyAsync(embed: messageBuilder.BuildEmbed(ctx.Client, raid));
         }
@@ -158,8 +170,7 @@ namespace TK.RaidBot.Discord
                 }
             }
 
-            Log.Debug("Updating message: user={0}, messageId={1} action={2}",
-                ctx.User.Username, ctx.Message.Id, this);
+            Log.Debug("Updating message {0}", ctx.Message.Id);
 
             await ctx.Message.ModifyAsync(embed: messageBuilder.BuildEmbed(ctx.Client, raid));
         }
@@ -237,10 +248,10 @@ namespace TK.RaidBot.Discord
                 {
                     action(raid);
                 }
+                raidService.UpdateRaid(raid);
             }
 
-            Log.Debug("Updating message: user={0}, messageId={1} action={2}",
-                ctx.User.Username, ctx.Message.Id, this);
+            Log.Debug("Updating message {0}", ctx.Message.Id);
 
             await ctx.Message.ModifyAsync(embed: messageBuilder.BuildEmbed(ctx.Client, raid));
 
