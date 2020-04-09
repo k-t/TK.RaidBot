@@ -13,7 +13,6 @@ namespace TK.RaidBot.Services
 
         private readonly MongoClient dbClient;
         private readonly string dbName;
-        private readonly object messageUpdateLock = new object();
 
         public DataService(DatabaseConfig config)
         {
@@ -23,7 +22,9 @@ namespace TK.RaidBot.Services
 
         public Raid AddRaid(Raid raid)
         {
-            raid.Timestamp = DateTime.Now;
+            var now = DateTime.Now;
+            raid.Timestamp = now;
+            raid.CreationDate = now;
 
             var raids = dbClient.GetDatabase(dbName).GetCollection<Raid>(RaidCollectionName);
             raids.InsertOne(raid);
@@ -34,100 +35,34 @@ namespace TK.RaidBot.Services
         public bool DeleteRaid(ulong channelId, ulong messageId)
         {
             var filter = CreateByMessageFilter(channelId, messageId);
-
-            var raids = dbClient.GetDatabase(dbName).GetCollection<Raid>(RaidCollectionName);
-            var result = raids.DeleteOne(filter);
-
+            var collection = dbClient.GetDatabase(dbName).GetCollection<Raid>(RaidCollectionName);
+            var result = collection.DeleteOne(filter);
             return result.DeletedCount > 0;
         }
 
-        public Raid GetRaidById(ObjectId id)
+        public Raid GetRaid(ObjectId id)
         {
             var filter = CreateByIdFilter(id);
-            var raids = dbClient.GetDatabase(dbName).GetCollection<Raid>(RaidCollectionName);
-            return raids.Find(filter).FirstOrDefault();
+            var collection = dbClient.GetDatabase(dbName).GetCollection<Raid>(RaidCollectionName);
+            return collection.Find(filter).FirstOrDefault();
         }
 
-        public Raid GetRaidByMessage(ulong channelId, ulong messageId)
+        public Raid GetRaid(ulong channelId, ulong messageId)
         {
             var filter = CreateByMessageFilter(channelId, messageId);
-            var raids = dbClient.GetDatabase(dbName).GetCollection<Raid>(RaidCollectionName);
-            return raids.Find(filter).FirstOrDefault();
+            var collection = dbClient.GetDatabase(dbName).GetCollection<Raid>(RaidCollectionName);
+            return collection.Find(filter).FirstOrDefault();
         }
 
-        public void SetRaidStatus(ObjectId raidId, RaidStatus status)
+        public Raid UpdateRaid(Raid raid)
         {
-            UpdateRaid(raidId, raid =>
-            {
-                raid.Status = status;
-                return raid;
-            });
-        }
+            raid.Timestamp = DateTime.Now;
 
-        public void SetParticipantStatus(ObjectId raidId, ulong userId, ParticipationStatus status)
-        {
-            UpdateRaid(raidId, raid =>
-            {
-                var participant = raid.Participants.FirstOrDefault(x => x.UserId == userId);
-                if (participant == null)
-                {
-                    participant = new RaidParticipant { UserId = userId, Role = RaidRole.Unknown };
-                    raid.Participants.Add(participant);
-                }
+            var filter = CreateByIdFilter(raid.Id);
+            var collection = dbClient.GetDatabase(dbName).GetCollection<Raid>(RaidCollectionName);
+            collection.ReplaceOne(filter, raid);
 
-                participant.Status = status;
-                raid.Timestamp = DateTime.Now;
-
-                return raid;
-            });
-        }
-
-        public void SetParticipantRole(ObjectId raidId, ulong userId, RaidRole role)
-        {
-            UpdateRaid(raidId, raid =>
-            {
-                var participant = raid.Participants.FirstOrDefault(x => x.UserId == userId);
-                if (participant == null)
-                {
-                    participant = new RaidParticipant { UserId = userId, Status = ParticipationStatus.Available };
-                    raid.Participants.Add(participant);
-                }
-
-                participant.Role = role;
-                raid.Timestamp = DateTime.Now;
-
-                return raid;
-            });
-        }
-
-        private void UpdateRaid(ObjectId raidId, Func<Raid, Raid> updateAction)
-        {
-            var filter = CreateByIdFilter(raidId);
-
-            // TODO: lock a single document somehow?
-            lock (messageUpdateLock)
-            {
-                using (var session = dbClient.StartSession())
-                {
-                    var raids = dbClient.GetDatabase(dbName).GetCollection<Raid>(RaidCollectionName);
-
-                    session.StartTransaction();
-                    try
-                    {
-                        var raid = raids.Find(filter).FirstOrDefault();
-                        if (raid == null)
-                            return;
-
-                        raid = updateAction(raid);
-                        raids.ReplaceOne(filter, raid);
-                    }
-                    catch (Exception)
-                    {
-                        session.AbortTransaction();
-                        throw;
-                    }
-                }
-            }
+            return raid;
         }
 
         private static FilterDefinition<Raid> CreateByIdFilter(ObjectId id)

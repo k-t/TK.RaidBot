@@ -1,4 +1,7 @@
-﻿using NLog;
+﻿using DSharpPlus.Entities;
+using NLog;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using TK.RaidBot.Discord.Reactions;
@@ -11,33 +14,35 @@ namespace TK.RaidBot.Discord
     {
         private static readonly ILogger Log = LogManager.GetCurrentClassLogger();
 
-        private readonly DataService dataService;
+        private readonly RaidService raidService;
         private readonly EmojiService emojiService;
         private readonly MessageBuilderService messageBuilder;
 
-        public BotReactions(DataService dataService, MessageBuilderService messageBuilder, EmojiService emojiService)
+        public BotReactions(RaidService raidService, MessageBuilderService messageBuilder, EmojiService emojiService)
         {
-            this.dataService = dataService;
+            this.raidService = raidService;
             this.messageBuilder = messageBuilder;
             this.emojiService = emojiService;
         }
 
         public AsyncReactionHandler GetReactionHandler(string emojiName, ReactionContext ctx)
         {
-            var raid = dataService.GetRaidByMessage(ctx.Channel.Id, ctx.Message.Id);
+            if (ctx.User.IsBot)
+                return null;
+
+            var raid = raidService.GetRaid(ctx.Channel.Id, ctx.Message.Id);
             if (raid != null)
             {
-                //if (emoji.GetDiscordName().Contains("🗑️"))
-                //    return new ClearParticipantsAction();
-
                 switch (emojiName)
                 {
                     case ":question:":
-                        return ctx => SetParticipantRole(raid, RaidRole.Unknown, ctx);
+                        return ctx => SetParticipantRole(RaidRole.Unknown, ctx);
                     case ":stop_button:":
-                        return ctx => SetRaidStatus(raid, RaidStatus.Expired, ctx);
+                        return ctx => SetRaidStatus(RaidStatus.Expired, ctx);
                     case ":arrow_forward:":
-                        return ctx => SetRaidStatus(raid, RaidStatus.Scheduled, ctx);
+                        return ctx => SetRaidStatus(RaidStatus.Scheduled, ctx);
+                    case ":hammer:":
+                        return FixReactions;
                     default:
                         {
                             // allow to change participation state only for scheduled raids
@@ -45,31 +50,35 @@ namespace TK.RaidBot.Discord
                             {
                                 var status = emojiService.GetStatusByEmoji(emojiName);
                                 if (status.HasValue)
-                                    return ctx => SetParticipantStatus(raid, status.Value, ctx);
+                                    return ctx => SetParticipantStatus(status.Value, ctx);
 
                                 var role = emojiService.GetRoleByEmoji(emojiName);
                                 if (role.HasValue)
-                                    return ctx => SetParticipantRole(raid, role.Value, ctx);
+                                    return ctx => SetParticipantRole(role.Value, ctx);
                             }
                             return HandleUnknownEmoji;
                         }
                 }
-
             }
+
             return null;
         }
 
-        private async Task SetRaidStatus(Raid raid, RaidStatus status, ReactionContext ctx)
+        private async Task SetRaidStatus(RaidStatus status, ReactionContext ctx)
         {
-            // if nothing changed
-            if (raid.Status == status)
-            {
+            var raid = raidService.GetRaid(ctx.Channel.Id, ctx.Message.Id);
+            if (raid == null)
                 return;
+
+            lock (raid)
+            {
+                // if nothing changed
+                if (raid.Status == status)
+                    return;
+
+                raid.Status = status;
+                raidService.UpdateRaid(raid);
             }
-
-            dataService.SetRaidStatus(raid.Id, status);
-
-            var updatedRaid = dataService.GetRaidById(raid.Id);
 
             Log.Debug("Updating message: user={0}, messageId={1} action={2}",
                 ctx.User.Username, ctx.Message.Id, this);
@@ -86,75 +95,155 @@ namespace TK.RaidBot.Discord
                     break;
             }
 
-            await ctx.Message.ModifyAsync(embed: messageBuilder.BuildEmbed(ctx.Client, updatedRaid));
+            await ctx.Message.ModifyAsync(embed: messageBuilder.BuildEmbed(ctx.Client, raid));
         }
 
-        private async Task SetParticipantRole(Raid raid, RaidRole role, ReactionContext ctx)
+        private async Task SetParticipantRole(RaidRole role, ReactionContext ctx)
         {
-            var participant = raid.Participants.FirstOrDefault(x => x.UserId == ctx.User.Id);
-
-            // if nothing changed
-            if (participant != null &&
-                participant.Role == role)
-            {
+            var raid = raidService.GetRaid(ctx.Channel.Id, ctx.Message.Id);
+            if (raid == null)
                 return;
+
+            lock (raid)
+            {
+                var participant = raid.Participants.FirstOrDefault(x => x.UserId == ctx.User.Id);
+                if (participant == null)
+                {
+                    raid.Participants.Add(new RaidParticipant { Role = role, UserId = ctx.User.Id });
+                    participant = new RaidParticipant
+                    {
+                        Status = ParticipationStatus.Available,
+                        Role = role,
+                        UserId = ctx.User.Id
+                    };
+                    raidService.UpdateRaid(raid);
+                }
+                else if (participant.Role != role)
+                {
+                    participant.Role = role;
+                    raidService.UpdateRaid(raid);
+                }
             }
-
-            dataService.SetParticipantRole(raid.Id, ctx.User.Id, role);
-
-            var updatedRaid = dataService.GetRaidById(raid.Id);
 
             Log.Debug("Updating message: user={0}, messageId={1} action={2}",
                 ctx.User.Username, ctx.Message.Id, this);
 
-            await ctx.Message.ModifyAsync(embed: messageBuilder.BuildEmbed(ctx.Client, updatedRaid));
+            await ctx.Message.ModifyAsync(embed: messageBuilder.BuildEmbed(ctx.Client, raid));
         }
 
-        private async Task SetParticipantStatus(Raid raid, ParticipationStatus status, ReactionContext ctx)
+        private async Task SetParticipantStatus(ParticipationStatus status, ReactionContext ctx)
         {
-            var participant = raid.Participants.FirstOrDefault(x => x.UserId == ctx.User.Id);
-
-            // if nothing changed
-            if (participant != null &&
-                participant.Status == status)
-            {
+            var raid = raidService.GetRaid(ctx.Channel.Id, ctx.Message.Id);
+            if (raid == null)
                 return;
+
+            lock (raid)
+            {
+                var participant = raid.Participants.FirstOrDefault(x => x.UserId == ctx.User.Id);
+                if (participant == null)
+                {
+                    participant = new RaidParticipant
+                    {
+                        Status = status,
+                        Role = RaidRole.Unknown,
+                        UserId = ctx.User.Id
+                    };
+                    raid.Participants.Add(participant);
+                    raidService.UpdateRaid(raid);
+                }
+                else if (participant.Status != status)
+                {
+                    participant.Status = status;
+                    raidService.UpdateRaid(raid);
+                }
             }
-
-            dataService.SetParticipantStatus(raid.Id, ctx.User.Id, status);
-
-            var updatedRaid = dataService.GetRaidById(raid.Id);
 
             Log.Debug("Updating message: user={0}, messageId={1} action={2}",
                 ctx.User.Username, ctx.Message.Id, this);
 
-            await ctx.Message.ModifyAsync(embed: messageBuilder.BuildEmbed(ctx.Client, updatedRaid));
+            await ctx.Message.ModifyAsync(embed: messageBuilder.BuildEmbed(ctx.Client, raid));
         }
 
-        // TODO:
-        private Task FixReactions(ReactionContext ctx)
+        /// <summary>
+        /// Cleans up reactions which were set on the message while bot was offline.
+        /// </summary>
+        private async Task FixReactions(ReactionContext ctx)
         {
-            //var message = ctx.Message;
+            var raid = raidService.GetRaid(ctx.Channel.Id, ctx.Message.Id);
+            if (raid == null)
+                return;
 
-            //foreach (var reaction in message.Reactions.ToArray())
-            //{
-            //    var users = await message.GetReactionsAsync(reaction.Emoji);
+            var actions = new List<Action<Raid>>();
+            var deletedReactions = new List<DiscordEmoji>();
 
-            //    foreach (var user in users)
-            //    {
-            //        if (user.IsBot)
-            //            continue;
+            var message = await ctx.Channel.GetMessageAsync(ctx.Message.Id);
+            var reactions = message.Reactions.ToArray();
 
-            //        var action = actionService.GetBotActionByEmoji(reaction.Emoji, ctx);
-            //        if (action != null)
-            //        {
-            //            await action.Execute(ctx);
-            //        }
+            foreach (var reaction in reactions)
+            {
+                var emojiName = reaction.Emoji.GetDiscordName();
 
-            //        await message.DeleteReactionAsync(reaction.Emoji, user);
-            //    }
-            //}
-            return Task.CompletedTask;
+                var users = await ctx.Message.GetReactionsAsync(reaction.Emoji);
+
+                foreach (var user in users)
+                {
+                    if (user.IsBot)
+                        continue;
+
+                    if (raid.Status == RaidStatus.Scheduled)
+                    {
+                        var status = emojiService.GetStatusByEmoji(emojiName);
+                        if (status.HasValue)
+                        {
+                            actions.Add(raid =>
+                            {
+                                var participant = raid.Participants.FirstOrDefault(x => x.UserId == user.Id);
+                                if (participant == null)
+                                {
+                                    participant = new RaidParticipant();
+                                    participant.UserId = user.Id;
+                                    participant.Role = RaidRole.Unknown;
+                                    raid.Participants.Add(participant);
+                                }
+                                participant.Status = status.Value;
+                            });
+                        }
+
+                        var role = emojiService.GetRoleByEmoji(emojiName);
+                        if (role.HasValue)
+                        {
+                            actions.Add(raid =>
+                            {
+                                var participant = raid.Participants.FirstOrDefault(x => x.UserId == ctx.User.Id);
+                                if (participant == null)
+                                {
+                                    participant = new RaidParticipant();
+                                    participant.UserId = user.Id;
+                                    participant.Status = ParticipationStatus.Available;
+                                    raid.Participants.Add(participant);
+                                }
+                                participant.Role = role.Value;
+                            });
+                        }
+                    }
+
+                    await ctx.Message.DeleteReactionAsync(reaction.Emoji, user);
+                }
+            }
+
+            lock (raid)
+            {   
+                foreach (var action in actions)
+                {
+                    action(raid);
+                }
+            }
+
+            Log.Debug("Updating message: user={0}, messageId={1} action={2}",
+                ctx.User.Username, ctx.Message.Id, this);
+
+            await ctx.Message.ModifyAsync(embed: messageBuilder.BuildEmbed(ctx.Client, raid));
+
         }
 
         private Task HandleUnknownEmoji(ReactionContext ctx)

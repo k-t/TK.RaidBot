@@ -23,13 +23,13 @@ namespace TK.RaidBot.Discord
         private static readonly Regex TimeRegex =
             new Regex(@"^(?<hour>[0-9]{1,2})\:(?<minute>[0-9]{1,2})$", RegexOptions.Compiled);
 
-        private readonly DataService dataService;
+        private readonly RaidService raidService;
         private readonly EmojiService emojiService;
         private readonly MessageBuilderService messageBuilder;
 
-        public BotCommands(DataService dataService, MessageBuilderService messageBuilder, EmojiService emojiService)
+        public BotCommands(RaidService raidService, MessageBuilderService messageBuilder, EmojiService emojiService)
         {
-            this.dataService = dataService;
+            this.raidService = raidService;
             this.messageBuilder = messageBuilder;
             this.emojiService = emojiService;
         }
@@ -92,7 +92,7 @@ namespace TK.RaidBot.Discord
 
                 // store raid
 
-                dataService.AddRaid(raid);
+                raidService.AddRaid(raid);
 
                 // add reactions
 

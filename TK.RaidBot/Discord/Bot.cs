@@ -19,14 +19,14 @@ namespace TK.RaidBot.Discord
         private static readonly ILogger Log = LogManager.GetCurrentClassLogger();
 
         private readonly DiscordClient client;
-        private readonly DataService dataService;
+        private readonly RaidService raidService;
 
         public Bot(BotConfig config, IServiceProvider serviceProvider)
         {
             if (config == null)
                 throw new ArgumentNullException(nameof(config));
 
-            dataService = serviceProvider.GetService<DataService>();
+            raidService = serviceProvider.GetService<RaidService>();
 
             var clientConfig = new DiscordConfiguration
             {
@@ -76,16 +76,16 @@ namespace TK.RaidBot.Discord
 
         private Task HandleMessageDeletion(MessageDeleteEventArgs e)
         {
-            HandleWithErrorLogging(() =>
+            DoWithErrorLogging(() =>
             {
-                var deleted = dataService.DeleteRaid(e.Channel.Id, e.Message.Id);
+                var deleted = raidService.DeleteRaid(e.Channel.Id, e.Message.Id);
                 if (deleted)
                     Log.Debug("Raid was deleted: channelId={0} messageId={0}", e.Channel.Id, e.Message.Id);
             });
             return Task.CompletedTask;
         }
 
-        private void HandleWithErrorLogging(Action action)
+        private void DoWithErrorLogging(Action action)
         {
             try
             {

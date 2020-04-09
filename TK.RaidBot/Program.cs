@@ -61,6 +61,7 @@ namespace TK.RaidBot
 
             var services = new ServiceCollection()
                 .AddSingleton(new DataService(databaseConfig))
+                .AddSingleton<RaidService>()
                 .AddSingleton<EmojiService>()
                 .AddSingleton<MessageBuilderService>();
 
