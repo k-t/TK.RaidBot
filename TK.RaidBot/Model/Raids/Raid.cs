@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace TK.RaidBot.Model.Data
+namespace TK.RaidBot.Model.Raids
 {
     public class Raid
     {

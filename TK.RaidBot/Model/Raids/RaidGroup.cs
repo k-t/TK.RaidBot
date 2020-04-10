@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Text;
-using TK.RaidBot.Model.Data;
 
-namespace TK.RaidBot.Model
+namespace TK.RaidBot.Model.Raids
 {
     public class RaidGroup
     {

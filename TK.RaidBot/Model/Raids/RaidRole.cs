@@ -1,4 +1,4 @@
-﻿namespace TK.RaidBot.Model.Data
+﻿namespace TK.RaidBot.Model.Raids
 {
     public enum RaidRole
     {

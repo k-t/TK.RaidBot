@@ -5,12 +5,11 @@ using System.Linq;
 using System.Text;
 using DSharpPlus;
 using DSharpPlus.Entities;
-using TK.RaidBot.Model;
-using TK.RaidBot.Model.Data;
+using TK.RaidBot.Model.Raids;
 
 namespace TK.RaidBot.Services
 {
-    public class MessageBuilderService
+    public class RaidMessageService
     {
         private static readonly HashSet<RaidRole> Trash = new HashSet<RaidRole>() {
             RaidRole.Ranger,
@@ -22,7 +21,7 @@ namespace TK.RaidBot.Services
 
         private readonly EmojiService emojiService;
 
-        public MessageBuilderService(EmojiService emojiService)
+        public RaidMessageService(EmojiService emojiService)
         {
             this.emojiService = emojiService;
         }

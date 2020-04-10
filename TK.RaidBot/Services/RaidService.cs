@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using TK.RaidBot.Model.Data;
+using TK.RaidBot.Model.Raids;
 
 namespace TK.RaidBot.Services
 {

@@ -6,12 +6,12 @@ using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Interactivity;
 using NLog;
-using TK.RaidBot.Model.Data;
+using TK.RaidBot.Model.Raids;
 using TK.RaidBot.Services;
 
 namespace TK.RaidBot.Discord
 {
-    public class BotCommands : BaseCommandModule
+    public class RaidCommands : BaseCommandModule
     {
         private const string DefaultRaidTime = "21:00"; // MSK
 
@@ -25,9 +25,9 @@ namespace TK.RaidBot.Discord
 
         private readonly RaidService raidService;
         private readonly EmojiService emojiService;
-        private readonly MessageBuilderService messageBuilder;
+        private readonly RaidMessageService messageBuilder;
 
-        public BotCommands(RaidService raidService, MessageBuilderService messageBuilder, EmojiService emojiService)
+        public RaidCommands(RaidService raidService, RaidMessageService messageBuilder, EmojiService emojiService)
         {
             this.raidService = raidService;
             this.messageBuilder = messageBuilder;

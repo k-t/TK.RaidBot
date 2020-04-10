@@ -3,7 +3,7 @@ using System.Linq;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using TK.RaidBot.Config;
-using TK.RaidBot.Model.Data;
+using TK.RaidBot.Model.Raids;
 
 namespace TK.RaidBot.Services
 {

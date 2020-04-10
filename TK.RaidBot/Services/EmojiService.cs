@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using DSharpPlus;
 using DSharpPlus.Entities;
-using TK.RaidBot.Model.Data;
+using TK.RaidBot.Model.Raids;
 
 namespace TK.RaidBot.Services
 {

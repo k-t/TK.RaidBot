@@ -5,20 +5,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using TK.RaidBot.Discord.Reactions;
-using TK.RaidBot.Model.Data;
+using TK.RaidBot.Model.Raids;
 using TK.RaidBot.Services;
 
 namespace TK.RaidBot.Discord
 {
-    public class BotReactions : IReactionsModule
+    public class RaidReactions : IReactionsModule
     {
         private static readonly ILogger Log = LogManager.GetCurrentClassLogger();
 
         private readonly RaidService raidService;
         private readonly EmojiService emojiService;
-        private readonly MessageBuilderService messageBuilder;
+        private readonly RaidMessageService messageBuilder;
 
-        public BotReactions(RaidService raidService, MessageBuilderService messageBuilder, EmojiService emojiService)
+        public RaidReactions(RaidService raidService, RaidMessageService messageBuilder, EmojiService emojiService)
         {
             this.raidService = raidService;
             this.messageBuilder = messageBuilder;
