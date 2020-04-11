@@ -7,6 +7,7 @@ using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Interactivity;
 using NLog;
 using TK.RaidBot.Model.Raids;
+using TK.RaidBot.Model.Raids.Templates;
 using TK.RaidBot.Services;
 
 namespace TK.RaidBot.Discord
@@ -35,8 +36,19 @@ namespace TK.RaidBot.Discord
             this.emojiService = emojiService;
         }
 
-        [Command("create")]
-        public async Task CreateRaid(CommandContext ctx, params string[] args)
+        [Command("wvw")]
+        public Task CreateWvwRaid(CommandContext ctx, params string[] args)
+        {
+            return CreateRaid(RaidTemplates.Wvw, ctx, args);
+        }
+
+        [Command("pve")]
+        public Task CreatePveRaid(CommandContext ctx, params string[] args)
+        {
+            return CreateRaid(RaidTemplates.Pve, ctx, args);
+        }
+
+        public async Task CreateRaid(IRaidTemplate template, CommandContext ctx, params string[] args)
         {
             try
             {
@@ -83,7 +95,8 @@ namespace TK.RaidBot.Discord
                     Status = RaidStatus.Scheduled,
                     Participants = new List<RaidParticipant>(),
                     OwnerId = ctx.User.Id,
-                    OwnerDisplayName = ctx.Member.DisplayName
+                    OwnerDisplayName = ctx.Member.DisplayName,
+                    TemplateCode = template.Code
                 };
 
                 var messageEmbed = messageBuilder.BuildEmbed(ctx.Client, raid);

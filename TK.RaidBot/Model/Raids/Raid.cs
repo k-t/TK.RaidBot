@@ -31,5 +31,7 @@ namespace TK.RaidBot.Model.Raids
         public RaidStatus Status { get; set; }
 
         public List<RaidParticipant> Participants { get; set; }
+
+        public string TemplateCode { get; set; }
     }
 }

@@ -1,72 +1,42 @@
 ﻿using System;
-using System.Text;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace TK.RaidBot.Model.Raids
 {
     public class RaidGroup
     {
-        private readonly string title;
+        private static readonly Profession[] NoProfessions = new Profession[0];
+
         private readonly Func<RaidParticipant, bool> filter;
-        private readonly bool displayRole;
-        private readonly bool inline;
-        private readonly StringBuilder valueBuilder;
-        private int count;
 
-        public RaidGroup(string title, Func<RaidParticipant, bool> filter,
-            bool displayRole = false,
-            bool inline = false)
+        public RaidGroup(string title, IEnumerable<Profession> includedProfessions)
         {
-            this.title = title;
+            this.Title = title;
+            this.Professions = includedProfessions.ToArray();
+            this.filter = participant =>
+                participant.Status == ParticipationStatus.Available &&
+                includedProfessions.Any(p => p.Id == participant.Role);
+        }
+
+        public RaidGroup(string title, Func<RaidParticipant, bool> filter)
+        {
+            this.Title = title;
+            this.Professions = NoProfessions;
             this.filter = filter;
-            this.displayRole = displayRole;
-            this.inline = inline;
-            valueBuilder = new StringBuilder();
         }
 
-        public bool DisplayRole
-        {
-            get { return displayRole; }
-        }
+        public string Title { get; set; }
 
-        public bool Inline
-        {
-            get { return inline; }
-        }
+        public Profession[] Professions { get; }
 
-        public void AddParticipant(string name, string role = null)
-        {
-            if (!string.IsNullOrEmpty(name))
-            {
-                if (valueBuilder.Length != 0)
-                    valueBuilder.Append('\n');
+        public bool ShowParticipantRole { get; set; }
 
-                if (!string.IsNullOrEmpty(role))
-                {
-                    valueBuilder.Append(role);
-                    valueBuilder.Append(' ');
-                }
-
-                valueBuilder.Append(name);
-            }
-
-            count++;
-        }
+        public bool Inline { get; set; }
 
         public bool Includes(RaidParticipant participant)
         {
             return filter(participant);
-        }
-
-        public string GetTitle()
-        {
-            return $"**{title}** ({count})";
-        }
-
-        public string GetParticipants()
-        {
-            var value = valueBuilder.ToString();
-
-            return !string.IsNullOrEmpty(value) ? value : "\u200b";
         }
     }
 }

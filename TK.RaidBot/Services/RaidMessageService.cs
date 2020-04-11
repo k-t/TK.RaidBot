@@ -5,20 +5,26 @@ using System.Linq;
 using System.Text;
 using DSharpPlus;
 using DSharpPlus.Entities;
-using TK.RaidBot.Model;
 using TK.RaidBot.Model.Raids;
+using TK.RaidBot.Model.Raids.Templates;
 
 namespace TK.RaidBot.Services
 {
     public class RaidMessageService
     {
-        private static readonly HashSet<int> Trash = new HashSet<int>() {
-            Professions.Ranger.Id,
-            Professions.Druid.Id,
-            Professions.Soulbeast.Id,
-            Professions.Thief.Id,
-            Professions.Deadeye.Id
-        };
+        private static readonly RaidGroup ReserveGroup =
+            new RaidGroup("Возможно появятся", x => x.Status == ParticipationStatus.Maybe)
+            {
+                ShowParticipantRole = true,
+                Inline = false
+            };
+
+        private static readonly RaidGroup NotAvailableGroup = 
+            new RaidGroup("Не смогут пойти", x => x.Status == ParticipationStatus.NotAvailable)
+            {
+                ShowParticipantRole = true,
+                Inline = false
+            };
 
         private readonly EmojiService emojiService;
 
@@ -38,20 +44,15 @@ namespace TK.RaidBot.Services
             if (guild == null)
                 throw new Exception($"Couldn't get guild with id={raid.GuildId}");
 
-            // grouping
+            // sort by groups
 
-            var otherGroup = CreateOtherRolesGroup();
+            var template = GetTemplate(raid.TemplateCode);
 
-            var groups = new[] {
-                CreateRoleGroup(client, Professions.Firebrand.Id),
-                CreateRoleGroup(client, Professions.Scrapper.Id),
-                CreateRoleGroup(client, Professions.Reaper.Id, Professions.Scourge.Id),
-                CreateRoleGroup(client, Professions.Herald.Id, Professions.Renegade.Id),
-                CreateRoleGroup(client, Professions.Spellbreaker.Id),
-                otherGroup,
-                CreateReserveGroup(),
-                CreateCancelledGroup()
-            };
+
+            var groups = new List<RaidGroupEmbedBuilder>();
+            groups.AddRange(template.Groups.Select(x => new RaidGroupEmbedBuilder(x)));
+            groups.Add(new RaidGroupEmbedBuilder(ReserveGroup));
+            groups.Add(new RaidGroupEmbedBuilder(NotAvailableGroup));
 
             int totalCount = 0;
             int availableCount = 0;
@@ -62,26 +63,21 @@ namespace TK.RaidBot.Services
                 if (member == null)
                     continue;
 
-                var group = groups.FirstOrDefault(x => x.Includes(participant));
+                var group = groups.FirstOrDefault(x => x.Group.Includes(participant));
                 if (group != null)
                 {
-                    var role = group.DisplayRole
-                        ? emojiService.GetRoleEmoji(client, participant.Role).ToString()
+                    var role = group.Group.ShowParticipantRole
+                        ? emojiService.GetProfessionEmoji(client, participant.Role).ToString()
                         : null;
 
                     group.AddParticipant(member.DisplayName, role);
-                }
-                else if (participant.Status == ParticipationStatus.Available)
-                {
-                    var role = emojiService.GetRoleEmoji(client, Professions.Unknown);
-                    otherGroup.AddParticipant(member.DisplayName, role);
-                }
 
-                totalCount++;
+                    totalCount++;
 
-                if (participant.Status == ParticipationStatus.Available)
-                {
-                    availableCount++;
+                    if (participant.Status == ParticipationStatus.Available)
+                    {
+                        availableCount++;
+                    }
                 }
             }
 
@@ -104,9 +100,12 @@ namespace TK.RaidBot.Services
                 Color = GetEmbedColor(raid.Status)
             };
 
-            foreach (var group in groups)
+            foreach (var groupBuilder in groups)
             {
-                embed.AddField(group.GetTitle(), group.GetParticipants(), group.Inline);
+                embed.AddField(
+                    name: GetGroupTitle(groupBuilder.Group, groupBuilder.Count, client),
+                    value: groupBuilder.GetParticipants(),
+                    inline: groupBuilder.Group.Inline);
             }
 
             embed.AddField(
@@ -116,55 +115,43 @@ namespace TK.RaidBot.Services
             return embed.Build();
         }
 
-        private RaidGroup CreateRoleGroup(DiscordClient client, params int[] roles)
+        private IRaidTemplate GetTemplate(string templateCode)
         {
-            if (roles == null || roles.Length == 0)
-                throw new ArgumentException("At least one role must be specified", nameof(roles));
+            // use wvw template by default
+            if (string.IsNullOrEmpty(templateCode))
+                return RaidTemplates.Wvw;
 
+            var template = RaidTemplates.GetByCode(templateCode);
+            if (template == null)
+                throw new Exception($"Unknown template {templateCode}");
+
+            return template;
+        }
+
+        private string GetGroupTitle(RaidGroup group, int count, DiscordClient client)
+        {
             var titleBuilder = new StringBuilder();
 
-            foreach (var role in roles)
+            if (group.Professions.Length > 0)
             {
-                titleBuilder.Append(emojiService.GetRoleEmoji(client, role));
+                foreach (var profession in group.Professions)
+                    titleBuilder.Append(emojiService.GetProfessionEmoji(client, profession.Id));
+
+                titleBuilder.Append(' ');
             }
 
-            return new RaidGroup(
-                title: titleBuilder.ToString(),
-                filter: x => x.Status == ParticipationStatus.Available && roles.Contains(x.Role),
-                displayRole: false,
-                inline: true);
-        }
+            if (!string.IsNullOrEmpty(group.Title))
+            {
+                titleBuilder.Append("**");
+                titleBuilder.Append(group.Title);
+                titleBuilder.Append("** ");
+            }
 
-        private RaidGroup CreateOtherRolesGroup()
-        {
-            return new RaidGroup(
-                title: "Другое",
-                filter: x => x.Status == ParticipationStatus.Available && IsAcceptableRole(x.Role),
-                displayRole: true,
-                inline: true);
-        }
+            titleBuilder.Append('(');
+            titleBuilder.Append(count);
+            titleBuilder.Append(')');
 
-        private RaidGroup CreateReserveGroup()
-        {
-            return new RaidGroup(
-                title: "Возможно появятся",
-                filter: x => x.Status == ParticipationStatus.Maybe,
-                displayRole: true,
-                inline: false);
-        }
-
-        private RaidGroup CreateCancelledGroup()
-        {
-            return new RaidGroup(
-                title: "Не смогут пойти",
-                filter: x => x.Status == ParticipationStatus.NotAvailable,
-                displayRole: true,
-                inline: false);
-        }
-
-        private bool IsAcceptableRole(int role)
-        {
-            return !Trash.Contains(role);
+            return titleBuilder.ToString();
         }
 
         private static DiscordColor GetEmbedColor(RaidStatus status)

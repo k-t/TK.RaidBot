@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using TK.RaidBot.Discord.Reactions;
 using TK.RaidBot.Model;
 using TK.RaidBot.Model.Raids;
+using TK.RaidBot.Model.Raids.Templates;
 using TK.RaidBot.Services;
 
 namespace TK.RaidBot.Discord
@@ -34,7 +35,7 @@ namespace TK.RaidBot.Discord
             var raid = raidService.GetRaid(ctx.Channel.Id, ctx.Message.Id);
             if (raid != null)
             {
-                bool isAdmin =
+                var isAdmin =
                     ctx.User.Id == raid.OwnerId ||
                     ctx.User.Id == ctx.Guild.Owner.Id ||
                     ctx.Client.CurrentApplication.Owners.Any(x => x.Id == ctx.User.Id);
@@ -67,8 +68,10 @@ namespace TK.RaidBot.Discord
                                 if (status.HasValue)
                                     return ctx => SetParticipantStatus(status.Value, ctx);
 
+                                var template = RaidTemplates.GetByCode(raid.TemplateCode) ?? RaidTemplates.Wvw;
+
                                 var role = Professions.GetByEmojiName(emojiName);
-                                if (role != null)
+                                if (role != null && template.AllowsProfession(role))
                                     return ctx => SetParticipantRole(role, ctx);
                             }
                             return HandleUnknownEmoji;
@@ -224,18 +227,22 @@ namespace TK.RaidBot.Discord
                         var role = Professions.GetByEmojiName(emojiName);
                         if (role != null)
                         {
-                            actions.Add(raid =>
+                            var template = RaidTemplates.GetByCode(raid.TemplateCode) ?? RaidTemplates.Wvw;
+                            if (template.AllowsProfession(role))
                             {
-                                var participant = raid.Participants.FirstOrDefault(x => x.UserId == ctx.User.Id);
-                                if (participant == null)
+                                actions.Add(raid =>
                                 {
-                                    participant = new RaidParticipant();
-                                    participant.UserId = user.Id;
-                                    participant.Status = ParticipationStatus.Available;
-                                    raid.Participants.Add(participant);
-                                }
-                                participant.Role = role.Id;
-                            });
+                                    var participant = raid.Participants.FirstOrDefault(x => x.UserId == ctx.User.Id);
+                                    if (participant == null)
+                                    {
+                                        participant = new RaidParticipant();
+                                        participant.UserId = user.Id;
+                                        participant.Status = ParticipationStatus.Available;
+                                        raid.Participants.Add(participant);
+                                    }
+                                    participant.Role = role.Id;
+                                });
+                            }
                         }
                     }
 

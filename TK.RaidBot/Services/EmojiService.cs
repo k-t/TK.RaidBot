@@ -18,7 +18,7 @@ namespace TK.RaidBot.Services
             statues = new Dictionary<ParticipationStatus, DiscordEmoji>();
         }
 
-        public DiscordEmoji GetRoleEmoji(DiscordClient client, int professionId)
+        public DiscordEmoji GetProfessionEmoji(DiscordClient client, int professionId)
         {
             if (!roles.TryGetValue(professionId, out DiscordEmoji result))
             {
@@ -36,7 +36,7 @@ namespace TK.RaidBot.Services
             if (profession == null)
                 throw new ArgumentNullException(nameof(profession));
 
-            return GetRoleEmoji(client, profession.Id);
+            return GetProfessionEmoji(client, profession.Id);
         }
 
         public DiscordEmoji GetStatusEmoji(DiscordClient client, ParticipationStatus status)

@@ -6,11 +6,9 @@ namespace TK.RaidBot.Model
 {
     public static class Professions
     {
-        private static readonly List<Profession> AllProfessions;
-
         static Professions()
         {
-            AllProfessions = new List<Profession>()
+            All = new List<Profession>()
             {
                 Guardian,
                 Warrior,
@@ -45,6 +43,8 @@ namespace TK.RaidBot.Model
                 Unknown
             };
         }
+
+        public static IEnumerable<Profession> All { get; }
 
         public static Profession Unknown { get; } = new Profession(0, "Unknown", ":question:");
 
@@ -116,17 +116,17 @@ namespace TK.RaidBot.Model
 
         public static Profession GetById(int id)
         {
-            return AllProfessions.FirstOrDefault(x => x.Id == id);
+            return All.FirstOrDefault(x => x.Id == id);
         }
 
         public static Profession GetByName(string name)
         {
-            return AllProfessions.FirstOrDefault(x => x.Name == name);
+            return All.FirstOrDefault(x => x.Name == name);
         }
 
         public static Profession GetByEmojiName(string emojiName)
         {
-            return AllProfessions.FirstOrDefault(x => x.EmojiName == emojiName);
+            return All.FirstOrDefault(x => x.EmojiName == emojiName);
         }
     }
 }
