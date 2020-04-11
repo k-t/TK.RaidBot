@@ -6,6 +6,6 @@
 
         public ParticipationStatus Status { get; set; }
 
-        public RaidRole Role { get; set; }
+        public int Role { get; set; }
     }
 }

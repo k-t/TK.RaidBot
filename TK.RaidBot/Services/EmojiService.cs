@@ -2,29 +2,41 @@
 using System.Collections.Generic;
 using DSharpPlus;
 using DSharpPlus.Entities;
+using TK.RaidBot.Model;
 using TK.RaidBot.Model.Raids;
 
 namespace TK.RaidBot.Services
 {
     public class EmojiService
     {
-        private readonly Dictionary<RaidRole, DiscordEmoji> roles;
+        private readonly Dictionary<int, DiscordEmoji> roles;
         private readonly Dictionary<ParticipationStatus, DiscordEmoji> statues;
 
         public EmojiService()
         {
-            roles = new Dictionary<RaidRole, DiscordEmoji>();
+            roles = new Dictionary<int, DiscordEmoji>();
             statues = new Dictionary<ParticipationStatus, DiscordEmoji>();
         }
 
-        public DiscordEmoji GetRoleEmoji(DiscordClient client, RaidRole role)
+        public DiscordEmoji GetRoleEmoji(DiscordClient client, int professionId)
         {
-            if (!roles.TryGetValue(role, out DiscordEmoji result))
+            if (!roles.TryGetValue(professionId, out DiscordEmoji result))
             {
-                result = DiscordEmoji.FromName(client, GetEmojiName(role));
-                roles[role] = result;
+                var profession = Professions.GetById(professionId);
+                result = profession != null
+                    ? DiscordEmoji.FromName(client, profession.EmojiName)
+                    : null;
+                roles[profession.Id] = result;
             }
             return result;
+        }
+
+        public DiscordEmoji GetRoleEmoji(DiscordClient client, Profession profession)
+        {
+            if (profession == null)
+                throw new ArgumentNullException(nameof(profession));
+
+            return GetRoleEmoji(client, profession.Id);
         }
 
         public DiscordEmoji GetStatusEmoji(DiscordClient client, ParticipationStatus status)
@@ -49,29 +61,6 @@ namespace TK.RaidBot.Services
                     return ParticipationStatus.Maybe;
                 default:
                     return null;
-            }
-        }
-
-        public RaidRole? GetRoleByEmoji(string emojiName)
-        {
-            var roleName = emojiName.Trim(':');
-
-            if (Enum.TryParse(roleName, out RaidRole role))
-                return role;
-
-            return null;
-        }
-
-        private static string GetEmojiName(RaidRole role)
-        {
-            switch (role)
-            {
-                //case RaidRole.Daredevil:
-                //    return ":wastebasket:";
-                case RaidRole.Unknown:
-                    return ":question:";
-                default:
-                    return $":{role}:";
             }
         }
 

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using TK.RaidBot.Discord.Reactions;
+using TK.RaidBot.Model;
 using TK.RaidBot.Model.Raids;
 using TK.RaidBot.Services;
 
@@ -56,7 +57,7 @@ namespace TK.RaidBot.Discord
                             ? FixReactions
                             : (AsyncReactionHandler)null;
                     case ":question:":
-                        return ctx => SetParticipantRole(RaidRole.Unknown, ctx);
+                        return ctx => SetParticipantRole(Professions.Unknown, ctx);
                     default:
                         {
                             // allow to change participation state only for scheduled raids
@@ -66,9 +67,9 @@ namespace TK.RaidBot.Discord
                                 if (status.HasValue)
                                     return ctx => SetParticipantStatus(status.Value, ctx);
 
-                                var role = emojiService.GetRoleByEmoji(emojiName);
-                                if (role.HasValue)
-                                    return ctx => SetParticipantRole(role.Value, ctx);
+                                var role = Professions.GetByEmojiName(emojiName);
+                                if (role != null)
+                                    return ctx => SetParticipantRole(role, ctx);
                             }
                             return HandleUnknownEmoji;
                         }
@@ -111,7 +112,7 @@ namespace TK.RaidBot.Discord
             await ctx.Message.ModifyAsync(embed: messageBuilder.BuildEmbed(ctx.Client, raid));
         }
 
-        private async Task SetParticipantRole(RaidRole role, ReactionContext ctx)
+        private async Task SetParticipantRole(Profession role, ReactionContext ctx)
         {
             var raid = raidService.GetRaid(ctx.Channel.Id, ctx.Message.Id);
             if (raid == null)
@@ -122,18 +123,18 @@ namespace TK.RaidBot.Discord
                 var participant = raid.Participants.FirstOrDefault(x => x.UserId == ctx.User.Id);
                 if (participant == null)
                 {
-                    raid.Participants.Add(new RaidParticipant { Role = role, UserId = ctx.User.Id });
                     participant = new RaidParticipant
                     {
                         Status = ParticipationStatus.Available,
-                        Role = role,
+                        Role = role.Id,
                         UserId = ctx.User.Id
                     };
+                    raid.Participants.Add(participant);
                     raidService.UpdateRaid(raid);
                 }
-                else if (participant.Role != role)
+                else if (participant.Role != role.Id)
                 {
-                    participant.Role = role;
+                    participant.Role = role.Id;
                     raidService.UpdateRaid(raid);
                 }
             }
@@ -157,7 +158,7 @@ namespace TK.RaidBot.Discord
                     participant = new RaidParticipant
                     {
                         Status = status,
-                        Role = RaidRole.Unknown,
+                        Role = Professions.Unknown.Id,
                         UserId = ctx.User.Id
                     };
                     raid.Participants.Add(participant);
@@ -213,15 +214,15 @@ namespace TK.RaidBot.Discord
                                 {
                                     participant = new RaidParticipant();
                                     participant.UserId = user.Id;
-                                    participant.Role = RaidRole.Unknown;
+                                    participant.Role = Professions.Unknown.Id;
                                     raid.Participants.Add(participant);
                                 }
                                 participant.Status = status.Value;
                             });
                         }
 
-                        var role = emojiService.GetRoleByEmoji(emojiName);
-                        if (role.HasValue)
+                        var role = Professions.GetByEmojiName(emojiName);
+                        if (role != null)
                         {
                             actions.Add(raid =>
                             {
@@ -233,7 +234,7 @@ namespace TK.RaidBot.Discord
                                     participant.Status = ParticipationStatus.Available;
                                     raid.Participants.Add(participant);
                                 }
-                                participant.Role = role.Value;
+                                participant.Role = role.Id;
                             });
                         }
                     }

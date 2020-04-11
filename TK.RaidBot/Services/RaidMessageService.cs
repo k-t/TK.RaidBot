@@ -5,18 +5,19 @@ using System.Linq;
 using System.Text;
 using DSharpPlus;
 using DSharpPlus.Entities;
+using TK.RaidBot.Model;
 using TK.RaidBot.Model.Raids;
 
 namespace TK.RaidBot.Services
 {
     public class RaidMessageService
     {
-        private static readonly HashSet<RaidRole> Trash = new HashSet<RaidRole>() {
-            RaidRole.Ranger,
-            RaidRole.Druid,
-            RaidRole.Soulbeast,
-            RaidRole.Thief,
-            RaidRole.Deadeye
+        private static readonly HashSet<int> Trash = new HashSet<int>() {
+            Professions.Ranger.Id,
+            Professions.Druid.Id,
+            Professions.Soulbeast.Id,
+            Professions.Thief.Id,
+            Professions.Deadeye.Id
         };
 
         private readonly EmojiService emojiService;
@@ -42,11 +43,11 @@ namespace TK.RaidBot.Services
             var otherGroup = CreateOtherRolesGroup();
 
             var groups = new[] {
-                CreateRoleGroup(client, RaidRole.Firebrand),
-                CreateRoleGroup(client, RaidRole.Scrapper),
-                CreateRoleGroup(client, RaidRole.Reaper, RaidRole.Scourge),
-                CreateRoleGroup(client, RaidRole.Herald, RaidRole.Renegade),
-                CreateRoleGroup(client, RaidRole.Spellbreaker),
+                CreateRoleGroup(client, Professions.Firebrand.Id),
+                CreateRoleGroup(client, Professions.Scrapper.Id),
+                CreateRoleGroup(client, Professions.Reaper.Id, Professions.Scourge.Id),
+                CreateRoleGroup(client, Professions.Herald.Id, Professions.Renegade.Id),
+                CreateRoleGroup(client, Professions.Spellbreaker.Id),
                 otherGroup,
                 CreateReserveGroup(),
                 CreateCancelledGroup()
@@ -72,7 +73,7 @@ namespace TK.RaidBot.Services
                 }
                 else if (participant.Status == ParticipationStatus.Available)
                 {
-                    var role = emojiService.GetRoleEmoji(client, RaidRole.Unknown);
+                    var role = emojiService.GetRoleEmoji(client, Professions.Unknown);
                     otherGroup.AddParticipant(member.DisplayName, role);
                 }
 
@@ -115,7 +116,7 @@ namespace TK.RaidBot.Services
             return embed.Build();
         }
 
-        private RaidGroup CreateRoleGroup(DiscordClient client, params RaidRole[] roles)
+        private RaidGroup CreateRoleGroup(DiscordClient client, params int[] roles)
         {
             if (roles == null || roles.Length == 0)
                 throw new ArgumentException("At least one role must be specified", nameof(roles));
@@ -161,7 +162,7 @@ namespace TK.RaidBot.Services
                 inline: false);
         }
 
-        private bool IsAcceptableRole(RaidRole role)
+        private bool IsAcceptableRole(int role)
         {
             return !Trash.Contains(role);
         }
