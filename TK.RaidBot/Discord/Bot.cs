@@ -14,7 +14,7 @@ namespace TK.RaidBot.Discord
 {
     public class Bot : IDisposable
     {
-        private const string RaidCommandPrefix = "!raid ";
+        private const string CommandPrefix = "!";
 
         private static readonly ILogger Log = LogManager.GetCurrentClassLogger();
 
@@ -40,13 +40,13 @@ namespace TK.RaidBot.Discord
             client.DebugLogger.LogMessageReceived += HandleLogMessage;
             client.MessageDeleted += HandleMessageDeletion;
 
-            var raidCommands = client.UseCommandsNext(
+            var commands = client.UseCommandsNext(
                 new CommandsNextConfiguration
                 {
-                    StringPrefixes = new[] { RaidCommandPrefix },
+                    StringPrefixes = new[] { CommandPrefix },
                     Services = serviceProvider
                 });
-            raidCommands.RegisterCommands<RaidCommands>();
+            commands.RegisterCommands<RaidCommands>();
 
             client.UseInteractivity(new InteractivityConfiguration { Timeout = TimeSpan.FromSeconds(60) });
             

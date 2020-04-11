@@ -11,6 +11,7 @@ using TK.RaidBot.Services;
 
 namespace TK.RaidBot.Discord
 {
+    [Group("raid")]
     public class RaidCommands : BaseCommandModule
     {
         private const string DefaultRaidTime = "21:00"; // MSK
