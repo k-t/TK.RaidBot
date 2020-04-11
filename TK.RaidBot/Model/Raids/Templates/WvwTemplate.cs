@@ -10,7 +10,7 @@ namespace TK.RaidBot.Model.Raids.Templates
             Professions.Druid.Id,
             Professions.Soulbeast.Id,
             Professions.Thief.Id,
-            Professions.Deadeye.Id
+            Professions.Deadeye.Id,
         };
 
         private static readonly RaidGroup[] WvwGroups = new []

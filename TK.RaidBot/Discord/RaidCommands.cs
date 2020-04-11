@@ -6,6 +6,7 @@ using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Interactivity;
 using NLog;
+using TK.RaidBot.Model;
 using TK.RaidBot.Model.Raids;
 using TK.RaidBot.Model.Raids.Templates;
 using TK.RaidBot.Services;
@@ -113,6 +114,15 @@ namespace TK.RaidBot.Discord
                 await message.CreateReactionAsync(emojiService.GetStatusEmoji(ctx.Client, ParticipationStatus.Available));
                 await message.CreateReactionAsync(emojiService.GetStatusEmoji(ctx.Client, ParticipationStatus.Maybe));
                 await message.CreateReactionAsync(emojiService.GetStatusEmoji(ctx.Client, ParticipationStatus.NotAvailable));
+
+                foreach (var group in template.Groups)
+                {
+                    foreach (var profession in group.Professions)
+                    {
+                        var emoji = emojiService.GetRoleEmoji(ctx.Client, profession);
+                        await message.CreateReactionAsync(emoji);
+                    }
+                }
             }
             catch (Exception e)
             {

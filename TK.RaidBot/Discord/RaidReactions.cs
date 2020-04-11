@@ -106,6 +106,17 @@ namespace TK.RaidBot.Discord
                     await ctx.Message.CreateReactionAsync(emojiService.GetStatusEmoji(ctx.Client, ParticipationStatus.Available));
                     await ctx.Message.CreateReactionAsync(emojiService.GetStatusEmoji(ctx.Client, ParticipationStatus.Maybe));
                     await ctx.Message.CreateReactionAsync(emojiService.GetStatusEmoji(ctx.Client, ParticipationStatus.NotAvailable));
+
+                    var template = RaidTemplates.GetByCode(raid.TemplateCode) ?? RaidTemplates.Wvw;
+                    foreach (var group in template.Groups)
+                    {
+                        foreach (var profession in group.Professions)
+                        {
+                            var emoji = emojiService.GetRoleEmoji(ctx.Client, profession);
+                            await ctx.Message.CreateReactionAsync(emoji);
+                        }
+                    }
+
                     break;
                 case RaidStatus.Expired:
                     await ctx.Message.DeleteAllReactionsAsync();
