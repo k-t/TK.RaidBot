@@ -12,7 +12,7 @@ using TK.RaidBot.Services;
 
 namespace TK.RaidBot.Discord
 {
-    public class RaidReactions : IReactionsModule
+    public class RaidReactionModule : IReactionsModule
     {
         private static readonly ILogger Log = LogManager.GetCurrentClassLogger();
 
@@ -20,7 +20,7 @@ namespace TK.RaidBot.Discord
         private readonly EmojiService emojiService;
         private readonly RaidMessageService messageBuilder;
 
-        public RaidReactions(RaidService raidService, RaidMessageService messageBuilder, EmojiService emojiService)
+        public RaidReactionModule(RaidService raidService, RaidMessageService messageBuilder, EmojiService emojiService)
         {
             this.raidService = raidService;
             this.messageBuilder = messageBuilder;

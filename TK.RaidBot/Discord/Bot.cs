@@ -46,7 +46,7 @@ namespace TK.RaidBot.Discord
                     StringPrefixes = new[] { CommandPrefix },
                     Services = serviceProvider
                 });
-            commands.RegisterCommands<RaidCommands>();
+            commands.RegisterCommands<RaidCommandModule>();
 
             client.UseInteractivity(new InteractivityConfiguration { Timeout = TimeSpan.FromSeconds(60) });
             
@@ -56,7 +56,7 @@ namespace TK.RaidBot.Discord
                     DeleteReactions = true,
                     Services = serviceProvider
                 });
-            reactions.RegisterReactions<RaidReactions>();
+            reactions.RegisterReactions<RaidReactionModule>();
         }
 
         public void Dispose()
