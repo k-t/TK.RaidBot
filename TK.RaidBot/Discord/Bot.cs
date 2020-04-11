@@ -43,6 +43,7 @@ namespace TK.RaidBot.Discord
             var commands = client.UseCommandsNext(
                 new CommandsNextConfiguration
                 {
+                    EnableDefaultHelp = false,
                     StringPrefixes = new[] { CommandPrefix },
                     Services = serviceProvider
                 });

@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
+using DSharpPlus.Entities;
 using DSharpPlus.Interactivity;
 using NLog;
+using TK.RaidBot.Model;
 using TK.RaidBot.Model.Raids;
 using TK.RaidBot.Model.Raids.Templates;
 using TK.RaidBot.Services;
@@ -127,6 +130,76 @@ namespace TK.RaidBot.Discord
             {
                 Log.Error(e, "CreateRaid: Unhandled exception");
             }
+        }
+
+        [Command("help")]
+        public async Task GetHelp(CommandContext ctx)
+        {
+            var embedBuilder = new DiscordEmbedBuilder()
+                .WithTitle("Help")
+                .WithColor(0x007FFF);
+
+            embedBuilder.AddField("**Команды**", GetCommandsHelpText());
+            embedBuilder.AddField("**Примеры**", GetExamplesHelpText());
+            embedBuilder.AddField("**Запись в рейд***", GetReactionsHelpText(ctx));
+            embedBuilder.AddField("**Служебные реакции****", GetServiceReactionsHelpText());
+            embedBuilder.AddField("**Замечания**", GetNotesHelpText(ctx));
+
+            await ctx.RespondAsync(embed: embedBuilder.Build());
+        }
+
+        private string GetCommandsHelpText()
+        {
+            var sb = new StringBuilder();
+            sb.Append("`!raid wvw <date> [time]` Создать запись на WvW рейд");
+            sb.Append('\n');
+            sb.Append("`!raid pve <date> [time]` Создать запись на PvE рейд");
+            return sb.ToString();
+        }
+
+        private string GetExamplesHelpText()
+        {
+            var sb = new StringBuilder();
+            sb.Append("`!raid wvw 22.05.2020 21:00`");
+            sb.Append('\n');
+            sb.Append("`!raid wvw 23.05 21:00`");
+            sb.Append('\n');
+            sb.Append("`!raid pve 24.05`");
+            return sb.ToString();
+        }
+
+        private string GetReactionsHelpText(CommandContext ctx)
+        {
+            var sb = new StringBuilder();
+
+            var availableEmoji = emojiService.GetStatusEmoji(ctx.Client, ParticipationStatus.Available);
+            var reserveEmoji = emojiService.GetStatusEmoji(ctx.Client, ParticipationStatus.Maybe);
+            var notAvailableEmoji = emojiService.GetStatusEmoji(ctx.Client, ParticipationStatus.NotAvailable);
+
+            sb.Append($"{availableEmoji} Подтвердить участие\n");
+            sb.Append($"{reserveEmoji} Если участие под вопросом\n");
+            sb.Append($"{notAvailableEmoji} Для отметки об отсутствии");
+
+            return sb.ToString();
+        }
+
+        private string GetServiceReactionsHelpText()
+        {
+            var sb = new StringBuilder();
+            sb.Append(":stop_button: Остановить запись в рейд\n");
+            sb.Append(":arrow_forward: Возобновить запись в рейд\n");
+            sb.Append(":hammer: Зачистить реакции, неучтенные ботом");
+            return sb.ToString();
+        }
+
+        private string GetNotesHelpText(CommandContext ctx)
+        {
+            var exampleRole = emojiService.GetProfessionEmoji(ctx.Client, Professions.Spellbreaker.Id);
+
+            var sb = new StringBuilder();
+            sb.Append($"*****  *Для подтверждения участия можно сразу выбрать реакцию с иконкой своего класса (например, {exampleRole})*\n");
+            sb.Append($"**\\*\\*** *Служебные реакции работают только для создателя рейда и владельца сервера*");
+            return sb.ToString();
         }
 
         private bool TryParseRaidDate(string dateStr, string timeStr, out DateTime result)
